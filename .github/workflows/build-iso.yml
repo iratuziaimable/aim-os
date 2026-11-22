@@ -12,59 +12,25 @@ jobs:
     steps:
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y live-build debootstrap xorriso squashfs-tools grub-pc-bin grub-efi-ia32-bin grub-efi-amd64-bin imagemagick
-      - name: Create AIM OS build source
+      - name: Generate AIM OS files
+        shell: bash
         run: |
-          mkdir -p auto config/package-lists config/includes.chroot/etc/skel/.config/openbox config/includes.chroot/etc/skel/.config/tint2 config/includes.chroot/etc/skel/.config/gtk-3.0 config/includes.chroot/etc/skel/Desktop config/includes.chroot/etc/lightdm/lightdm.conf.d config/includes.chroot/usr/share/backgrounds/aim-os
- printf '%s\n' '#!/bin/sh' 'lb config noauto --architectures i386 --distribution trixie --binary-images iso-hybrid --bootloaders grub --debian-installer false --archive-areas main --apt-recommends false --iso-volume AIM_OS_02 --iso-publisher "AIM OS Project" --iso-application "AIM OS Desktop 0.2" --mirror-bootstrap http://deb.debian.org/debian --mirror-chroot http://deb.debian.org/debian --mirror-chroot-security http://security.debian.org/debian-security --mirror-binary http://deb.debian.org/debian --mirror-binary-security http://security.debian.org/debian-security' > auto/config
+          set -eux
+          mkdir -p auto config/package-lists config/includes.chroot/etc/skel/.config/openbox config/includes.chroot/etc/skel/.config/tint2 config/includes.chroot/etc/skel/.config/gtk-3.0 config/includes.chroot/etc/lightdm/lightdm.conf.d config/includes.chroot/usr/share/backgrounds/aim-os
+ printf '%s\n' '#!/bin/sh' 'lb config noauto --architectures i386 --distribution trixie --binary-images iso-hybrid --bootloaders grub --debian-installer false --archive-areas main --apt-recommends false --iso-volume AIM_OS_02 --iso-publisher AIM-OS --iso-application AIM-OS-0.2 --mirror-bootstrap http://deb.debian.org/debian --mirror-chroot http://deb.debian.org/debian --mirror-chroot-security http://security.debian.org/debian-security --mirror-binary http://deb.debian.org/debian --mirror-binary-security http://security.debian.org/debian-security' > auto/config
           chmod +x auto/config
-          cat > config/package-lists/aim-os.list.chroot && 'EOF'
-          linux-image-686-pae
-          live-boot
-          systemd-sysv
-          xserver-xorg
-          openbox
-          obconf
-          tint2
-          feh
-          pcmanfm
-          lxterminal
-          xterm
-          lightdm
-          lightdm-gtk-greeter
-          fonts-dejavu-core
-          fonts-noto-core
-          network-manager
-          network-manager-gnome
-          policykit-1
-          udisks2
-          x11-xserver-utils
-          lxappearance
-          mousepad
-          galculator
-          EOF
-          cat > config/includes.chroot/etc/lightdm/lightdm.conf.d/aim-autologin.conf && 'EOF'
-          [Seat:*]
-          autologin-user=user
-          autologin-user-timeout=0
-          EOF
-          printf 'exec openbox-session\n' > config/includes.chroot/etc/skel/.xsession
-          cat > config/includes.chroot/etc/skel/.config/openbox/autostart && 'EOF'
-          (sleep 3 && feh --bg-fill /usr/share/backgrounds/aim-os/aim-wallpaper.png) &
-          tint2 &
-          EOF
-          cat > config/includes.chroot/etc/skel/.config/gtk-3.0/settings.ini && 'EOF'
-          [Settings]
-          gtk-theme-name=Adwaita-dark
-          gtk-icon-theme-name=Adwaita
-          gtk-application-prefer-dark-theme=1
-          EOF
-          convert -size 1600x900 gradient:'#10151e-#163346' -fill '#19c7e5' -pointsize 20 -gravity northwest -annotate +120+170 'AIM OS | LIGHTWEIGHT DESKTOP' -fill white -pointsize 110 -gravity northwest -annotate +120+220 'AIM OS' -fill '#85c8da' -pointsize 28 -annotate +130+360 'LIGHTWEIGHT  /  FAST  /  YOURS' config/includes.chroot/usr/share/backgrounds/aim-os/aim-wallpaper.png
+          printf '%s\n' linux-image-686-pae live-boot systemd-sysv xserver-xorg openbox obconf tint2 feh pcmanfm lxterminal xterm lightdm lightdm-gtk-greeter fonts-dejavu-core fonts-noto-core network-manager network-manager-gnome policykit-1 udisks2 x11-xserver-utils lxappearance mousepad galculator > config/package-lists/aim-os.list.chroot
+          printf '%s\n' '[Seat:*]' 'autologin-user=user' 'autologin-user-timeout=0' > config/includes.chroot/etc/lightdm/lightdm.conf.d/aim-autologin.conf
+          printf '%s\n' 'exec openbox-session' > config/includes.chroot/etc/skel/.xsession
+          printf '%s\n' '(sleep 3 && feh --bg-fill /usr/share/backgrounds/aim-os/aim-wallpaper.png) &' 'tint2 &' > config/includes.chroot/etc/skel/.config/openbox/autostart
+          printf '%s\n' '[Settings]' 'gtk-theme-name=Adwaita-dark' 'gtk-icon-theme-name=Adwaita' 'gtk-application-prefer-dark-theme=1' > config/includes.chroot/etc/skel/.config/gtk-3.0/settings.ini
+          convert -size 1600x900 gradient:'#10151e-#163346' -fill '#19c7e5' -pointsize 20 -gravity northwest -annotate +120+170 'AIM OS | LIGHTWEIGHT DESKTOP' -fill white -pointsize 110 -annotate +120+220 'AIM OS' -fill '#85c8da' -pointsize 28 -annotate +130+360 'LIGHTWEIGHT / FAST / YOURS' config/includes.chroot/usr/share/backgrounds/aim-os/aim-wallpaper.png
       - name: Configure live-build
         run: sudo ./auto/config
       - name: Build ISO
         run: sudo lb build
       - name: Verify ISO
-        run: find . -maxdepth 1 -type f -name '*.iso' -exec ls -lh {} ; -exec file {} ;
+        run: ls -lh *.iso && file *.iso
       - name: Upload ISO artifact
         uses: actions/upload-artifact@v4
         with:
