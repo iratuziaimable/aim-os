@@ -1,0 +1,27 @@
+name: Build AIM OS ISO
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y live-build debootstrap xorriso squashfs-tools grub-pc-bin grub-efi-ia32-bin grub-efi-amd64-bin
+      - name: Build ISO
+        run: sudo ./build.sh
+      - name: Verify ISO
+        run: test -s build/*.iso && ls -lh build/*.iso && file build/*.iso
+      - name: Upload ISO artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AIM-OS-0.2-ISO
+          path: build/*.iso
+          if-no-files-found: error
+          retention-days: 30
